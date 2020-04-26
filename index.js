@@ -8,13 +8,23 @@ const path = require('path');
 const fs = require('fs');
 const hbjs = require('handbrake-js');
 const axios = require('axios');
+const genThumbnail = require('simple-thumbnail')
 
 app.use(bodyParser.urlencoded())
 app.set('view engine', 'ejs');
 app.use('/',express.static(__dirname + '/views/'));
 app.use('/Videos',  express.static(__dirname + '/Videos/'));
+app.use('/thumbnails',  express.static(__dirname + '/thumbnails/'));
 const directoryPath = path.join(__dirname, '/Videos/');
 app.use(session({ secret: 'keyboard cat', cookie: { maxAge: 3600000 } }))
+
+
+
+app.get('/thumbnail/:name',  function (req, res) {
+	
+genThumbnail(__dirname +'/Videos/'+ req.params.name+'.mp4' , __dirname + '/thumbnails/'+ req.params.name+'.jpg', '800x?').then(() => res.send("done"))
+    .catch(err => console.error(err))
+});
 
 app.get('/convert/:name',  function (req, res) {
 	  	var dosya = req.params.name ; 
@@ -55,13 +65,28 @@ app.get('/convert/:name',  function (req, res) {
 
 });
 
-app.get('/cevir/:name',  function (req, res) {
+app.get('/generatethumbs',  function (req, res) {
 	
 	
-   axios.get('/convert/'+ req.params.name);
-  
-  res.send("cevirme basladi")
+// var videos = [];
+	fs.readdir(directoryPath, function (err, files) {
+    //handling error
+    if (err) {
+        return console.log('Unable to scan directory: ' + err);
+    } 
+    //listing all files using forEach
+    files.forEach(function (file) {
+        // Do whatever you want to do with the file
+      // videos.push(file); 
+	   
+    genThumbnail(__dirname +'/Videos/'+ file.split(".")[0] +'.mp4' , __dirname + '/thumbnails/'+ file.split(".")[0]+'.jpg', '800x?', {"seek": "00:00:29"} ).then(() => res.send("done"))
+    .catch(err => console.error(err))
+	
+	});
+	
 
+	});
+res.send("thumbs generated");
 });
 
 app.get('/watch/:name', Auth2,  function (req, res) {
